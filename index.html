@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>มะเร็งเต้านม: ทางเลือกและการรักษา — 2D Pixel Interactive Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Chakra Petch & Press Start 2P for Retro Game Vibe -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,500&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pixel-border: #ffffff;
+            --pixel-bg: #141824;
+            --pixel-accent: #ff6b9d;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Chakra Petch', sans-serif;
+            background-color: #0b0d14;
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .font-retro-en {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        /* Crisp Pixel Art Rendering */
+        .pixelated {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* 2-Frame Retro Idle Bounce ("ดุกดิกๆ") */
+        @keyframes pixelBounce {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes pixelBounceFast {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-9px) scale(1.02); }
+        }
+
+        @keyframes pixelShiver {
+            0%, 100% { transform: translateX(0px) translateY(0px); }
+            25% { transform: translateX(-4px) translateY(2px); }
+            50% { transform: translateX(4px) translateY(0px); }
+            75% { transform: translateX(-3px) translateY(-2px); }
+        }
+
+        @keyframes pixelFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes blinkArrow {
+            0%, 100% { opacity: 1; transform: translateY(0); }
+            50% { opacity: 0.2; transform: translateY(4px); }
+        }
+
+        @keyframes scanBeam {
+            0% { top: 15%; opacity: 0.9; }
+            50% { top: 75%; opacity: 1; }
+            100% { top: 15%; opacity: 0.9; }
+        }
+
+        @keyframes screenShake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-8px, 4px); }
+            40% { transform: translate(8px, -6px); }
+            60% { transform: translate(-6px, -4px); }
+            80% { transform: translate(6px, 4px); }
+        }
+
+        .anim-dukdik {
+            animation: pixelBounce 0.65s steps(2, end) infinite;
+        }
+
+        .anim-dukdik-happy {
+            animation: pixelBounceFast 0.45s steps(2, end) infinite;
+        }
+
+        .anim-shiver {
+            animation: pixelShiver 0.35s steps(2, end) infinite;
+        }
+
+        .anim-item-float {
+            animation: pixelFloat 0.8s steps(2, end) infinite;
+        }
+
+        .anim-arrow {
+            animation: blinkArrow 0.7s steps(2, end) infinite;
+        }
+
+        .anim-shake {
+            animation: screenShake 0.4s steps(2, end) 1;
+        }
+
+        /* Retro RPG Box Borders */
+        .retro-box {
+            background: #141829;
+            border: 4px solid #ffffff;
+            box-shadow: 
+                inset 0 0 0 4px #2c3558,
+                0 6px 0 #070910,
+                0 8px 20px rgba(0,0,0,0.7);
+        }
+
+        .retro-btn {
+            background: #232b47;
+            border: 3px solid #ffffff;
+            box-shadow: inset 0 -4px 0 #131829, 0 4px 0 #070910;
+            transition: transform 0.08s steps(2);
+        }
+
+        .retro-btn:hover:not(:disabled) {
+            background: #333f66;
+            border-color: #ff85b3;
+            transform: translateY(-2px);
+        }
+
+        .retro-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: inset 0 -2px 0 #131829, 0 1px 0 #070910;
+        }
+
+        /* CRT Subtle Scanline Overlay */
+        .crt-lines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.18) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* Drop Zone Highlight */
+        .drop-zone-active {
+            outline: 4px dashed #38bdf8;
+            outline-offset: 4px;
+            background: rgba(56, 189, 248, 0.15);
+        }
+
+        .drop-zone-ready {
+            outline: 4px dashed #4ade80;
+            outline-offset: 4px;
+            background: rgba(74, 222, 128, 0.25);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 select-none">
+
+    <!-- Top Header & Controls -->
+    <header class="w-full max-w-4xl flex flex-wrap items-center justify-between gap-2 mb-2 px-2">
+        <div class="flex items-center gap-2">
+            <span class="inline-block w-3 h-3 bg-pink-400 border-2 border-white"></span>
+            <h1 class="text-sm sm:text-base md:text-lg font-bold tracking-wide text-pink-200">
+                🎗️ PIXEL STORY: มะเร็งเต้านม ทางเลือกและการรักษา
+            </h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btnSound" onclick="toggleAudio()" class="retro-btn px-3 py-1 text-xs sm:text-sm font-bold flex items-center gap-1.5 text-emerald-300">
+                <span id="soundIcon">🔊</span> <span id="soundText">SFX: เปิด</span>
+            </button>
+            <button onclick="resetGame()" class="retro-btn px-3 py-1 text-xs sm:text-sm font-bold text-amber-200">
+                🔄 เริ่มใหม่
+            </button>
+        </div>
+    </header>
+
+    <!-- Main 16:9 Retro Game Container -->
+    <main id="gameScreen" class="relative w-full max-w-4xl retro-box overflow-hidden flex flex-col" style="min-height: 540px;">
+        
+        <!-- CRT Scanlines Overlay -->
+        <div class="crt-lines absolute inset-0 z-30"></div>
+
+        <!-- TOP STATUS BAR (HUD) -->
+        <div class="relative z-20 bg-[#0d101d] border-b-4 border-[#2c3558] px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 bg-pink-600 text-white font-bold border border-white text-xs" id="hudChapter">SCENE 1</span>
+                <span id="hudLocation" class="text-slate-200 font-semibold">ห้องนอนยามเช้า</span>
+            </div>
+
+            <!-- Patient Health / Treatment Progress Bar -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-pink-400 font-bold">♥ สุขภาพ:</span>
+                    <div class="w-28 sm:w-36 h-4 bg-slate-900 border-2 border-white p-0.5">
+                        <div id="hpBar" class="h-full bg-emerald-400 transition-all duration-300" style="width: 85%;"></div>
+                    </div>
+                    <span id="hpText" class="font-mono text-xs text-emerald-300">85%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             UPPER 70%: 2D PIXEL SCENE VIEWPORT
+             ========================================== -->
+        <div id="sceneViewport" class="relative flex-1 min-h-[290px] sm:min-h-[340px] w-full overflow-hidden flex items-center justify-center transition-colors duration-500 bg-[#3a2e3f]">
+            
+            <!-- DYNAMIC PIXEL BACKGROUND LAYER -->
+            <div id="bgLayer" class="absolute inset-0 w-full h-full pointer-events-none"></div>
+
+            <!-- TREATMENT STEP PROGRESS PILLS (Shown only in Mini-Game) -->
+            <div id="treatmentStepper" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-[#141829]/95 border-2 border-white px-3 py-1.5 flex items-center gap-2 shadow-lg w-[92%] sm:w-auto justify-center">
+                <span class="text-xs font-bold text-cyan-300">ขั้นตอนรักษา:</span>
+                <div class="flex items-center gap-1.5 text-xs">
+                    <span id="stepPill1" class="px-2 py-0.5 border border-slate-500 bg-slate-800 text-slate-400">1.อัลตราซาวด์</span>
+                    <span class="text-slate-500">▶</span>
+                    <span id="stepPill2" class="px-2 py-0.5 border border-slate-500 bg-slate-800 text-slate-400">2.เจาะชิ้นเนื้อ</span>
+                    <span class="text-slate-500">▶</span>
+                    <span id="stepPill3" class="px-2 py-0.5 border border-slate-500 bg-slate-800 text-slate-400">3.ผ่าตัดก้อนเนื้อ</span>
+                    <span class="text-slate-500">▶</span>
+                    <span id="stepPill4" class="px-2 py-0.5 border border-slate-500 bg-slate-800 text-slate-400">4.ยารักษา</span>
+                </div>
+            </div>
+
+            <!-- CHARACTER STAGE AREA -->
+            <div class="relative z-10 w-full h-full flex items-end justify-center pb-4 px-4 gap-4 sm:gap-12">
+                
+                <!-- PROTAGONIST SPRITE CONTAINER (Also acts as Drop Zone in Mini-Game) -->
+                <div id="patientDropZone" 
+                     ondragover="handleDragOver(event)" 
+                     ondragleave="handleDragLeave(event)" 
+                     ondrop="handleDrop(event)"
+                     onclick="handlePatientClick()"
+                     class="relative flex flex-col items-center justify-end transition-all duration-200 p-2 rounded">
+                    
+                    <!-- Drop Here Floating Banner (Mini-game only) -->
+                    <div id="dropHintBadge" class="hidden absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap bg-cyan-500 text-slate-950 font-bold text-xs px-2.5 py-1 border-2 border-white shadow-md anim-dukdik z-30">
+                        ⬇ ลากอุปกรณ์มาวางที่นี่ ⬇
+                    </div>
+
+                    <!-- Floating Emotion Icon (Sweat, Shock, Heart, Scan) -->
+                    <div id="emotionBubble" class="hidden absolute -top-6 -right-3 z-20 anim-dukdik-happy"></div>
+
+                    <!-- Medical Scan Beam Effect Overlay -->
+                    <div id="scanBeamOverlay" class="hidden absolute inset-x-2 h-2 bg-cyan-300 shadow-[0_0_12px_#22d3ee] z-30 pointer-events-none" style="animation: scanBeam 1.2s linear infinite;"></div>
+
+                    <!-- Tumor / Lump Indicator Radar (Mini-Game Visual Feedback) -->
+                    <div id="lumpIndicator" class="hidden absolute top-[46%] left-[53%] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                        <span class="flex h-4 w-4 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-4 w-4 bg-rose-600 border-2 border-white"></span>
+                        </span>
+                    </div>
+
+                    <!-- Protagonist 2D Pixel Art SVG Sprite -->
+                    <div id="protagonistSprite" class="w-32 h-36 sm:w-40 sm:h-44 anim-dukdik pixelated flex items-center justify-center">
+                        <!-- Rendered via JS SVG Pixel Grid -->
+                    </div>
+                    <span class="mt-1 px-2 py-0.5 bg-slate-900/80 border border-slate-500 text-xs text-pink-200 font-bold">
+                        มินตรา (คุณ)
+                    </span>
+                </div>
+
+                <!-- DOCTOR SPRITE CONTAINER (Shown in Hospital Route) -->
+                <div id="doctorContainer" class="hidden relative flex flex-col items-center justify-end p-2">
+                    <div id="doctorBubble" class="hidden absolute -top-6 -left-2 z-20 anim-dukdik-happy"></div>
+                    <div id="doctorSprite" class="w-32 h-36 sm:w-40 sm:h-44 anim-dukdik pixelated flex items-center justify-center">
+                        <!-- Rendered via JS SVG Pixel Grid -->
+                    </div>
+                    <span class="mt-1 px-2 py-0.5 bg-slate-900/80 border border-teal-400 text-xs text-teal-200 font-bold">
+                        พญ. ทอฝัน
+                    </span>
+                </div>
+
+            </div>
+
+            <!-- ==========================================
+                 INTERACTIVE OVERLAY: 2-CHOICE MODAL
+                 ========================================== -->
+            <div id="choiceOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center p-4">
+                <div class="retro-box max-w-xl w-full p-4 sm:p-6 text-center">
+                    <div class="inline-block px-3 py-1 bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm border-2 border-white mb-3 anim-dukdik">
+                        ⚡ จุดตัดสินใจสำคัญ (CHOICE POINT) ⚡
+                    </div>
+                    <h2 class="text-base sm:text-xl font-bold text-white mb-4">
+                        คุณคลำพบก้อนเนื้อผิดปกติที่เต้านม... คุณจะเลือกทำอย่างไร?
+                    </h2>
+
+                    <div class="grid grid-cols-1 gap-3 text-left">
+                        <!-- Choice 1: Ignore -->
+                        <button onclick="selectRoute(1)" class="retro-btn p-3 sm:p-4 flex items-start gap-3 group w-full text-left">
+                            <span class="px-2.5 py-1 bg-rose-600 text-white font-bold border-2 border-white text-sm shrink-0 group-hover:scale-110 transition-transform">
+                                ทางเลือก 1
+                            </span>
+                            <div>
+                                <div class="font-bold text-rose-300 text-sm sm:text-base">
+                                    คลำพบแล้ว "ไม่ไปหาหมอ" (ปล่อยไว้ก่อน)
+                                </div>
+                                <div class="text-xs sm:text-sm text-slate-300 mt-0.5">
+                                    "คงไม่มีอะไรหรอกมั้ง ไม่เห็นรู้สึกเจ็บเลย เดี๋ยวก็คงยุบไปเองแหละ..."
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Choice 2: See Doctor -->
+                        <button onclick="selectRoute(2)" class="retro-btn p-3 sm:p-4 flex items-start gap-3 group w-full text-left">
+                            <span class="px-2.5 py-1 bg-emerald-600 text-white font-bold border-2 border-white text-sm shrink-0 group-hover:scale-110 transition-transform">
+                                ทางเลือก 2
+                            </span>
+                            <div>
+                                <div class="font-bold text-emerald-300 text-sm sm:text-base">
+                                    คลำพบแล้ว "รีบไปหาหมอทันที" (ตรวจคัดกรอง)
+                                </div>
+                                <div class="text-xs sm:text-sm text-slate-300 mt-0.5">
+                                    "ไม่ประมาทดีกว่า! รีบไปให้หมอตรวจเช็กให้แน่ใจตั้งแต่ตอนนี้เลย"
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 ENDING SUMMARY OVERLAY (BAD END / TRUE END)
+                 ========================================== -->
+            <div id="endingOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/90 flex flex-col items-center justify-center p-4 overflow-y-auto">
+                <div class="retro-box max-w-lg w-full p-5 text-center">
+                    <div id="endingBadge" class="inline-block px-3 py-1 font-bold text-xs sm:text-sm border-2 border-white mb-2">
+                        ENDING
+                    </div>
+                    <h2 id="endingTitle" class="text-lg sm:text-2xl font-bold text-white mb-2"></h2>
+                    <p id="endingDesc" class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-4"></p>
+
+                    <div class="bg-[#0d101d] border-2 border-slate-600 p-3 text-left text-xs sm:text-sm text-amber-100 mb-4">
+                        <div class="font-bold text-pink-300 mb-1">💡 เกร็ดความรู้สู้มะเร็งเต้านม:</div>
+                        <ul class="list-disc list-inside space-y-1 text-slate-300">
+                            <li>ก้อนมะเร็งเต้านมในระยะเริ่มต้น <b>มักไม่มีอาการเจ็บ</b></li>
+                            <li>การตรวจพบตั้งแต่ <b>ระยะที่ 1</b> มีโอกาสรักษาหายขาดสูงถึง <b>90–95%+</b></li>
+                            <li>สามารถผ่าตัดแบบสงวนเต้านม (เฉพาะก้อนเนื้อ) และฟื้นตัวได้เร็ว</li>
+                        </ul>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                        <button id="btnTryRoute2" onclick="selectRoute(2)" class="retro-btn px-4 py-2 text-xs sm:text-sm font-bold text-emerald-300">
+                            ⏪ ย้อนกลับไปเลือก "ไปหาหมอ" (ทางเลือกที่ 2)
+                        </button>
+                        <button onclick="resetGame()" class="retro-btn px-4 py-2 text-xs sm:text-sm font-bold text-amber-200">
+                            🔄 เล่นใหม่ตั้งแต่ต้น
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==========================================
+             LOWER 30%: RETRO DIALOGUE BOX & INVENTORY
+             ========================================== -->
+        <div class="relative z-20 bg-[#101424] border-t-4 border-white p-3 sm:p-4 flex flex-col justify-between min-h-[185px]">
+            
+            <!-- INVENTORY BAR (Shown only during Route 2 Medical Mini-Game) -->
+            <div id="inventoryPanel" class="hidden mb-3 bg-[#1a2138] border-2 border-cyan-400 p-2">
+                <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5 px-1">
+                    <span class="text-xs font-bold text-cyan-300 flex items-center gap-1">
+                        🧰 คลังอุปกรณ์การแพทย์ (ลากอุปกรณ์ไปวางที่ตัวคนไข้ หรือคลิกเลือกแล้วกดที่ตัวคนไข้):
+                    </span>
+                    <span id="selectedToolHint" class="text-xs text-amber-300 font-semibold">
+                        ยังไม่ได้เลือกอุปกรณ์
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="inventoryGrid">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- TYPEWRITER DIALOGUE BOX -->
+            <div id="dialogueBox" onclick="handleDialogueClick()" class="cursor-pointer flex-1 flex flex-col justify-between bg-[#181f36] border-2 border-[#475585] p-3 relative hover:border-pink-400 transition-colors">
+                
+                <!-- Speaker Name Tag -->
+                <div class="flex items-center justify-between mb-1">
+                    <span id="speakerBadge" class="px-2.5 py-0.5 bg-pink-600 text-white font-bold text-xs sm:text-sm border border-white shadow">
+                        มินตรา
+                    </span>
+                    <span id="clickPromptHint" class="text-[11px] text-slate-400">
+                        คลิกที่กล่องข้อความเพื่อไปต่อ
+                    </span>
+                </div>
+
+                <!-- Typewriter Text Output -->
+                <p id="dialogueText" class="text-sm sm:text-base md:text-lg text-white font-medium leading-relaxed min-h-[3.2rem] pr-6"></p>
+
+                <!-- Blinking Retro Next Arrow -->
+                <div id="nextArrow" class="hidden absolute bottom-2.5 right-3 text-pink-400 font-bold text-base anim-arrow">
+                    ▼
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer Instructions -->
+    <footer class="w-full max-w-4xl mt-2 px-2 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+        <div>🕹️ <b>วิธีเล่น:</b> กดที่กล่องข้อความด้านล่างเพื่ออ่านเนื้อเรื่อง • เลือกเส้นทาง • ลากอุปกรณ์การแพทย์มารักษาตามลำดับ</div>
+        <div>2D Pixel Art Interactive Story Engine (Blueprint V7)</div>
+    </footer>
+
+    <!-- ==========================================
+         JAVASCRIPT: PIXEL ART ENGINE, AUDIO & STORY
+         ========================================== -->
+    <script>
+        /* -----------------------------------------------------------
+           1. RETRO 8-BIT WEB AUDIO SYNTHESIZER (No external MP3 needed)
+        ----------------------------------------------------------- */
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').textContent = soundEnabled ? '🔊' : '🔇';
+            document.getElementById('soundText').textContent = soundEnabled ? 'SFX: เปิด' : 'SFX: ปิด';
+            if (soundEnabled) playBeep(660, 0.07, 'square');
+        }
+
+        function playBeep(freq = 440, duration = 0.04, type = 'square', volume = 0.06) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playSfx(effect) {
+            if (!soundEnabled) return;
+            if (effect === 'type') {
+                // Classic RPG dialogue blip
+                const pitch = 480 + Math.random() * 140;
+                playBeep(pitch, 0.028, 'square', 0.04);
+            } else if (effect === 'next') {
+                playBeep(620, 0.06, 'square', 0.07);
+            } else if (effect === 'shock') {
+                playBeep(190, 0.18, 'sawtooth', 0.1);
+                setTimeout(() => playBeep(145, 0.25, 'sawtooth', 0.1), 120);
+            } else if (effect === 'choice') {
+                playBeep(523.25, 0.07, 'square', 0.08);
+                setTimeout(() => playBeep(659.25, 0.1, 'square', 0.08), 70);
+            } else if (effect === 'heal') {
+                [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+                    setTimeout(() => playBeep(f, 0.11, 'triangle', 0.1), idx * 80);
+                });
+            } else if (effect === 'wrong') {
+                playBeep(220, 0.12, 'sawtooth', 0.09);
+                setTimeout(() => playBeep(180, 0.18, 'sawtooth', 0.09), 110);
+            } else if (effect === 'badEnd') {
+                [330, 293.66, 261.63, 220].forEach((f, idx) => {
+                    setTimeout(() => playBeep(f, 0.22, 'sawtooth', 0.08), idx * 180);
+                });
+            } else if (effect === 'fanfare') {
+                [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5].forEach((f, idx) => {
+                    setTimeout(() => playBeep(f, 0.14, 'square', 0.09), idx * 110);
+                });
+            }
+        }
+
+        /* -----------------------------------------------------------
+           2. 2D PIXEL ART SVG SPRITE & BACKGROUND GENERATOR
+        ----------------------------------------------------------- */
+        function getProtagonistSVG(state = 'normal', mouthOpen = false) {
+            // Customize outfit & expression colors based on state
+            const isPatient = (state === 'patient' || state === 'cured');
+            const isSick = (state === 'sick' || state === 'critical');
+            const isShocked = (state === 'shocked');
+            const isCured = (state === 'cured');
+
+            const skinColor = isSick ? '#d8ccd0' : '#ffdfc4';
+            const cheekColor = isCured ? '#ff7eb6' : (isSick ? '#94a3b8' : '#ffb3c6');
+            const shirtColor = isPatient ? '#7dd3fc' : '#f9a8d4'; // Pastel blue gown or pink casual top
+            const cardiganColor = isPatient ? '#38bdf8' : '#fef3c7';
+
+            // Eyes & Mouth variations
+            let eyesMarkup = `
+                <rect x="6" y="7" width="1" height="2" fill="#1e1b24"/>
+                <rect x="9" y="7" width="1" height="2" fill="#1e1b24"/>
+            `;
+            if (isShocked) {
+                eyesMarkup = `
+                    <rect x="5" y="6" width="2" height="2" fill="#ffffff"/>
+                    <rect x="6" y="7" width="1" height="1" fill="#1e1b24"/>
+                    <rect x="9" y="6" width="2" height="2" fill="#ffffff"/>
+                    <rect x="9" y="7" width="1" height="1" fill="#1e1b24"/>
+                `;
+            } else if (isSick) {
+                eyesMarkup = `
+                    <rect x="5" y="7" width="2" height="1" fill="#1e1b24"/>
+                    <rect x="9" y="7" width="2" height="1" fill="#1e1b24"/>
+                    <rect x="5" y="8" width="2" height="1" fill="#64748b"/>
+                    <rect x="9" y="8" width="2" height="1" fill="#64748b"/>
+                `;
+            } else if (isCured) {
+                eyesMarkup = `
+                    <rect x="5" y="7" width="2" height="1" fill="#1e1b24"/>
+                    <rect x="9" y="7" width="2" height="1" fill="#1e1b24"/>
+                `;
+            }
+
+            let mouthMarkup = `<rect x="7" y="10" width="2" height="1" fill="#e11d48"/>`;
+            if (mouthOpen || isShocked) {
+                mouthMarkup = `<rect x="7" y="9" width="2" height="2" fill="#be123c"/>`;
+            } else if (isSick) {
+                mouthMarkup = `<rect x="7" y="10" width="2" height="1" fill="#64748b"/>`;
+            }
+
+            // Hand touching chest when checking lump
+            const handCheckMarkup = (state === 'shocked' || state === 'sick') ? `
+                <rect x="8" y="13" width="2" height="2" fill="${skinColor}" stroke="#1e1b24" stroke-width="0.3"/>
+            ` : '';
+
+            return `
+            <svg viewBox="0 0 16 20" class="w-full h-full pixelated drop-shadow-[0_6px_0_rgba(0,0,0,0.45)]">
+                <!-- Hair Back -->
+                <rect x="3" y="2" width="10" height="11" fill="#1e1b2e"/>
+                <!-- Head / Face -->
+                <rect x="4" y="4" width="8" height="7" fill="${skinColor}"/>
+                <!-- Hair Bangs -->
+                <rect x="3" y="2" width="10" height="3" fill="#27233a"/>
+                <rect x="3" y="5" width="2" height="4" fill="#27233a"/>
+                <rect x="11" y="5" width="2" height="4" fill="#27233a"/>
+                <!-- Eyes -->
+                ${eyesMarkup}
+                <!-- Blush Cheeks -->
+                <rect x="5" y="9" width="1" height="1" fill="${cheekColor}"/>
+                <rect x="10" y="9" width="1" height="1" fill="${cheekColor}"/>
+                <!-- Mouth -->
+                ${mouthMarkup}
+                <!-- Neck -->
+                <rect x="7" y="11" width="2" height="1" fill="${skinColor}"/>
+                <!-- Body / Outfit -->
+                <rect x="4" y="12" width="8" height="7" fill="${cardiganColor}"/>
+                <rect x="6" y="12" width="4" height="7" fill="${shirtColor}"/>
+                <!-- Arms -->
+                <rect x="3" y="12" width="1" height="5" fill="${cardiganColor}"/>
+                <rect x="12" y="12" width="1" height="5" fill="${cardiganColor}"/>
+                <rect x="3" y="17" width="1" height="1" fill="${skinColor}"/>
+                <rect x="12" y="17" width="1" height="1" fill="${skinColor}"/>
+                ${handCheckMarkup}
+            </svg>`;
+        }
+
+        function getDoctorSVG(mouthOpen = false) {
+            const mouth = mouthOpen 
+                ? `<rect x="7" y="10" width="2" height="2" fill="#e11d48"/>`
+                : `<rect x="7" y="10" width="2" height="1" fill="#e11d48"/>`;
+
+            return `
+            <svg viewBox="0 0 16 20" class="w-full h-full pixelated drop-shadow-[0_6px_0_rgba(0,0,0,0.45)]">
+                <!-- Hair Bun -->
+                <rect x="6" y="0" width="4" height="2" fill="#1e293b"/>
+                <!-- Hair Head -->
+                <rect x="3" y="2" width="10" height="9" fill="#1e293b"/>
+                <!-- Face -->
+                <rect x="4" y="4" width="8" height="7" fill="#ffdfc4"/>
+                <!-- Glasses -->
+                <rect x="5" y="6" width="2" height="2" fill="#38bdf8" opacity="0.6"/>
+                <rect x="9" y="6" width="2" height="2" fill="#38bdf8" opacity="0.6"/>
+                <rect x="5" y="6" width="6" height="1" fill="#e2e8f0"/>
+                <!-- Eyes -->
+                <rect x="6" y="7" width="1" height="1" fill="#0f172a"/>
+                <rect x="9" y="7" width="1" height="1" fill="#0f172a"/>
+                <!-- Smile -->
+                ${mouth}
+                <!-- Neck -->
+                <rect x="7" y="11" width="2" height="1" fill="#ffdfc4"/>
+                <!-- White Medical Coat & Teal Scrubs -->
+                <rect x="3" y="12" width="10" height="7" fill="#f8fafc"/>
+                <rect x="6" y="12" width="4" height="7" fill="#14b8a6"/>
+                <!-- Stethoscope -->
+                <rect x="5" y="12" width="1" height="4" fill="#64748b"/>
+                <rect x="10" y="12" width="1" height="4" fill="#64748b"/>
+                <rect x="10" y="16" width="2" height="1" fill="#fbbf24"/>
+            </svg>`;
+        }
+
+        function getEmotionIconSVG(type) {
+            if (type === 'shock') {
+                return `<div class="bg-rose-600 text-white font-retro-en text-xs px-2 py-1 border-2 border-white shadow">!!</div>`;
+            } else if (type === 'sweat') {
+                return `<div class="bg-sky-400 text-slate-950 font-bold text-xs px-2 py-0.5 border-2 border-white shadow">💧 กังวล</div>`;
+            } else if (type === 'pain') {
+                return `<div class="bg-purple-800 text-rose-200 font-bold text-xs px-2 py-0.5 border-2 border-rose-400 shadow">⚡ ปวดจี๊ด</div>`;
+            } else if (type === 'heart') {
+                return `<div class="bg-pink-500 text-white font-bold text-xs px-2 py-0.5 border-2 border-white shadow">💖 แข็งแรง!</div>`;
+            } else if (type === 'check') {
+                return `<div class="bg-emerald-500 text-slate-950 font-bold text-xs px-2 py-0.5 border-2 border-white shadow">✔ สำเร็จ</div>`;
+            }
+            return '';
+        }
+
+        function getPixelBackground(sceneType) {
+            if (sceneType === 'bedroom_warm') {
+                return `
+                <div class="w-full h-full bg-[#3b2d4a] relative overflow-hidden">
+                    <!-- Pixel Window with Morning Sunlight -->
+                    <div class="absolute top-6 left-8 w-28 h-28 bg-[#bae6fd] border-4 border-[#f8fafc] shadow-[0_0_30px_rgba(253,224,71,0.35)]">
+                        <div class="w-full h-1 bg-[#f8fafc] absolute top-1/2"></div>
+                        <div class="h-full w-1 bg-[#f8fafc] absolute left-1/2"></div>
+                    </div>
+                    <!-- Mirror on Right -->
+                    <div class="absolute top-8 right-10 w-20 h-36 bg-[#67e8f9]/40 border-4 border-[#fde68a]"></div>
+                    <!-- Floor -->
+                    <div class="absolute bottom-0 inset-x-0 h-12 bg-[#271c33] border-t-4 border-[#58426e]"></div>
+                </div>`;
+            } else if (sceneType === 'bedroom_dark') {
+                return `
+                <div class="w-full h-full bg-[#111625] relative overflow-hidden">
+                    <!-- Dark Night Window -->
+                    <div class="absolute top-6 left-8 w-28 h-28 bg-[#1e293b] border-4 border-[#475585]">
+                        <div class="w-4 h-4 bg-slate-300 absolute top-3 right-4"></div>
+                    </div>
+                    <!-- Gloomy Vignette -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-rose-950/50 via-transparent to-slate-950/80"></div>
+                    <div class="absolute bottom-0 inset-x-0 h-12 bg-[#090d16] border-t-4 border-[#1e293b]"></div>
+                </div>`;
+            } else if (sceneType === 'icu_dark') {
+                return `
+                <div class="w-full h-full bg-[#1a111e] relative overflow-hidden">
+                    <!-- Blinking Red ECG Monitor -->
+                    <div class="absolute top-8 right-12 w-32 h-20 bg-slate-950 border-4 border-rose-500 p-2 flex items-center justify-center">
+                        <span class="text-rose-500 font-retro-en text-[10px] animate-pulse">STAGE IV ALERT</span>
+                    </div>
+                    <div class="absolute bottom-0 inset-x-0 h-12 bg-[#120b14] border-t-4 border-rose-900"></div>
+                </div>`;
+            } else if (sceneType === 'clinic_bright') {
+                return `
+                <div class="w-full h-full bg-[#164e63] relative overflow-hidden">
+                    <!-- Medical Screen & Poster -->
+                    <div class="absolute top-6 left-8 w-36 h-24 bg-[#083344] border-4 border-cyan-300 p-2 flex flex-col justify-center items-center">
+                        <span class="text-cyan-300 font-retro-en text-[9px]">MAMMOGRAM SCAN</span>
+                        <span class="text-emerald-300 text-xs font-bold mt-1">ตรวจเร็ว = รักษาหายได้</span>
+                    </div>
+                    <!-- Medical Cross Sign -->
+                    <div class="absolute top-6 right-10 w-12 h-12 bg-white border-2 border-teal-300 flex items-center justify-center text-teal-600 font-bold text-2xl">+</div>
+                    <!-- Clean Hospital Floor -->
+                    <div class="absolute bottom-0 inset-x-0 h-12 bg-[#0e7490] border-t-4 border-cyan-200"></div>
+                </div>`;
+            } else if (sceneType === 'garden_sunny') {
+                return `
+                <div class="w-full h-full bg-gradient-to-b from-[#38bdf8] to-[#a7f3d0] relative overflow-hidden">
+                    <!-- Pixel Sun -->
+                    <div class="absolute top-5 right-10 w-16 h-16 bg-amber-300 border-4 border-white shadow-[0_0_25px_#fde047]"></div>
+                    <!-- Pixel Flowers & Grass -->
+                    <div class="absolute bottom-0 inset-x-0 h-14 bg-[#10b981] border-t-4 border-[#ecfdf5] flex items-center justify-around px-6">
+                        <span class="text-lg">🌸</span><span class="text-lg">🌷</span><span class="text-lg">🌼</span><span class="text-lg">🌸</span>
+                    </div>
+                </div>`;
+            }
+            return '';
+        }
+
+        /* -----------------------------------------------------------
+           3. MEDICAL INVENTORY ITEMS (4 DRAG & DROP TOOLS)
+        ----------------------------------------------------------- */
+        const medicalTools = [
+            {
+                id: 'ultrasound',
+                stepRequired: 1,
+                name: '1. เครื่องอัลตราซาวด์',
+                desc: 'สแกนหาก้อนเนื้อระยะเริ่มต้น',
+                iconSvg: `<svg viewBox="0 0 16 16" class="w-8 h-8 pixelated"><rect x="5" y="2" width="6" height="5" fill="#38bdf8"/><rect x="6" y="7" width="4" height="6" fill="#e2e8f0"/><rect x="4" y="1" width="8" height="1" fill="#bae6fd"/></svg>`
+            },
+            {
+                id: 'biopsy_needle',
+                stepRequired: 2,
+                name: '2. เข็มเจาะตรวจชิ้นเนื้อ',
+                desc: 'ยืนยันชนิดเซลล์เพื่อวางแผนผ่าตัด',
+                iconSvg: `<svg viewBox="0 0 16 16" class="w-8 h-8 pixelated"><rect x="7" y="1" width="2" height="4" fill="#94a3b8"/><rect x="6" y="5" width="4" height="6" fill="#38bdf8"/><rect x="7" y="11" width="2" height="4" fill="#e2e8f0"/></svg>`
+            },
+            {
+                id: 'scalpel',
+                stepRequired: 3,
+                name: '3. อุปกรณ์ผ่าตัดเฉพาะจุด',
+                desc: 'ผ่าตัดนำก้อนเนื้อร้ายออก (สงวนเต้านม)',
+                iconSvg: `<svg viewBox="0 0 16 16" class="w-8 h-8 pixelated"><rect x="7" y="2" width="3" height="5" fill="#f43f5e"/><rect x="6" y="7" width="4" height="6" fill="#e2e8f0"/><rect x="5" y="13" width="2" height="2" fill="#38bdf8"/></svg>`
+            },
+            {
+                id: 'medicine',
+                stepRequired: 4,
+                name: '4. ยารักษาและฟื้นฟู',
+                desc: 'ป้องกันการกลับมาเป็นซ้ำจนหายดี',
+                iconSvg: `<svg viewBox="0 0 16 16" class="w-8 h-8 pixelated"><rect x="5" y="2" width="6" height="2" fill="#f8fafc"/><rect x="4" y="4" width="8" height="10" fill="#ec4899"/><rect x="6" y="7" width="4" height="4" fill="#ffffff"/></svg>`
+            }
+        ];
+
+        /* -----------------------------------------------------------
+           4. STORY NODES & DIALOGUE SCRIPT
+        ----------------------------------------------------------- */
+        const storyBranches = {
+            intro: [
+                {
+                    chapter: 'SCENE 1',
+                    location: 'ห้องนอนยามเช้า',
+                    bg: 'bedroom_warm',
+                    speaker: 'มินตรา (คุณ)',
+                    pState: 'normal',
+                    showDoctor: false,
+                    emotion: null,
+                    hp: 90,
+                    text: 'เช้าวันหยุดที่แสนสงบ... คุณกำลังยืนอยู่หน้ากระจกเพื่อเตรียมตัวอาบน้ำแต่งตัวเหมือนปกติทุกวัน'
+                },
+                {
+                    chapter: 'SCENE 1',
+                    location: 'ห้องนอนยามเช้า',
+                    bg: 'bedroom_warm',
+                    speaker: 'มินตรา (คุณ)',
+                    pState: 'shocked',
+                    showDoctor: false,
+                    emotion: 'shock',
+                    shake: true,
+                    sfx: 'shock',
+                    hp: 85,
+                    text: 'แต่ทว่า... จังหวะที่ปลายนิ้วลองคลำสำรวจบริเวณเต้านม คุณกลับสัมผัสได้ถึง "ก้อนแข็งๆ" บางอย่างที่ไม่เคยมีมาก่อน!'
+                },
+                {
+                    chapter: 'SCENE 1',
+                    location: 'ห้องนอนยามเช้า',
+                    bg: 'bedroom_warm',
+                    speaker: 'มินตรา (คุณ)',
+                    pState: 'shocked',
+                    showDoctor: false,
+                    emotion: 'sweat',
+                    hp: 85,
+                    text: '"เอ๊ะ...? ทำไมมีก้อนอะไรสักอย่างตรงนี้ล่ะ? ลองกดดูก็ไม่เห็นเจ็บเลย... เราควรทำยังไงดีนะ?"',
+                    triggerChoice: true
+                }
+            ],
+
+            // ROUTE 1: คลำพบแล้วไม่ไปหาหมอ (รันสถานการณ์ไปเรื่อยๆ จนจบ)
+            route1: [
+                {
+                    chapter: 'ทางเลือกที่ 1',
+                    location: 'เพิกเฉย ไม่ไปหาหมอ',
+                    bg: 'bedroom_warm',
+                    speaker: 'มินตรา (คุณ)',
+                    pState: 'normal',
+                    showDoctor: false,
+                    emotion: null,
+                    hp: 80,
+                    text: 'คุณเลือกที่จะไม่ไปหาหมอ เพราะคิดว่าก้อนเนื้อที่ไม่เจ็บคงไม่อันตราย เดี๋ยวปล่อยไว้ก็คงยุบหายไปเอง...'
+                },
+                {
+                    chapter: 'ผ่านไป 3 เดือน',
+                    location: 'ห้องนอนยามค่ำคืน',
+                    bg: 'bedroom_dark',
+                    speaker: 'ระบบบรรยาย',
+                    pState: 'shocked',
+                    showDoctor: false,
+                    emotion: 'sweat',
+                    hp: 60,
+                    text: '[ 3 เดือนผ่านไป... ] ก้อนเนื้อไม่ได้ยุบลงเลยแม้แต่น้อย ซ้ำยังมีขนาดขยายใหญ่ขึ้นและแข็งกว่าเดิมอย่างเห็นได้ชัด'
+                },
+                {
+                    chapter: 'ผ่านไป 6 เดือน',
+                    location: 'อาการเริ่มทรุดลง',
+                    bg: 'bedroom_dark',
+                    speaker: 'มินตรา (คุณ)',
+                    pState: 'sick',
+                    shiver: true,
+                    showDoctor: false,
+                    emotion: 'pain',
+                    sfx: 'shock',
+                    hp: 35,
+                    text: '[ 6 เดือนผ่านไป... ] "โอ๊ย... เริ่มปวดจี๊ดๆ ที่หน้าอกแล้ว ผิวหนังก็เริ่มบุ๋มลงไป ทำไมร่างกายถึงเพลียขนาดนี้นะ..."'
+                },
+                {
+                    chapter: 'ผ่านไป 1 ปี',
+                    location: 'ห้องฉุกเฉินโรงพยาบาล',
+                    bg: 'icu_dark',
+                    speaker: 'พญ. ทอฝัน',
+                    pState: 'critical',
+                    shiver: true,
+                    showDoctor: true,
+                    emotion: 'pain',
+                    sfx: 'badEnd',
+                    hp: 15,
+                    text: 'สุดท้ายคุณถูกนำส่งโรงพยาบาล... คุณหมอแจ้งข่าวร้ายว่า มะเร็งเต้านมได้ลุกลามเข้าสู่ระยะท้ายแล้ว ทำให้การรักษาซับซ้อนและยากลำบากมาก',
+                    triggerBadEnd: true
+                }
+            ],
+
+            // ROUTE 2: คลำพบแล้วไปหาหมอ + มินิเกมลากอุปกรณ์รักษา
+            route2_intro: [
+                {
+                    chapter: 'ทางเลือกที่ 2',
+                    location: 'คลินิกคัดกรองมะเร็งเต้านม',
+                    bg: 'clinic_bright',
+                    speaker: 'ระบบบรรยาย',
+                    pState: 'normal',
+                    showDoctor: true,
+                    emotion: null,
+                    hp: 85,
+                    text: 'คุณตัดสินใจไม่ประมาท และรีบเดินทางมาพบแพทย์เฉพาะทางที่โรงพยาบาลทันทีตั้งแต่คลำพบก้อนเนื้อ!'
+                },
+                {
+                    chapter: 'ทางเลือกที่ 2',
+                    location: 'ห้องตรวจเฉพาะทาง',
+                    bg: 'clinic_bright',
+                    speaker: 'พญ. ทอฝัน',
+                    pState: 'patient',
+                    showDoctor: true,
+                    emotion: 'check',
+                    hp: 88,
+                    text: '"ดีมากเลยค่ะที่รีบมาตรวจตั้งแต่เนิ่นๆ! เดี๋ยวเรามาเริ่มขั้นตอนตรวจและรักษาตามลำดับกันเลยนะคะ ลากอุปกรณ์จากคลังด้านล่างมาใช้กับคนไข้ได้เลยค่ะ"',
+                    startMiniGame: true
+                }
+            ],
+
+            // TRUE ENDING: หลังรักษาครบ 4 ขั้นตอน
+            route2_ending: [
+                {
+                    chapter: 'TRUE ENDING',
+                    location: 'สวนสุขภาพโรงพยาบาล',
+                    bg: 'garden_sunny',
+                    speaker: 'พญ. ทอฝัน',
+                    pState: 'cured',
+                    showDoctor: true,
+                    emotion: 'heart',
+                    sfx: 'fanfare',
+                    hp: 100,
+                    text: '"ยินดีด้วยนะคะคุณมินตรา! ผลตรวจล่าสุดไม่พบเซลล์มะเร็งในร่างกายแล้ว (Cancer-Free) คุณรักษามะเร็งเต้านมหายดี 100% แล้วค่ะ!"'
+                },
+                {
+                    chapter: 'TRUE ENDING',
+                    location: 'สวนสุขภาพโรงพยาบาล',
+                    bg: 'garden_sunny',
+                    speaker: 'มินตรา (คุณ)',
+                    pState: 'cured',
+                    showDoctor: true,
+                    emotion: 'heart',
+                    hp: 100,
+                    text: '"ขอบคุณคุณหมอมากเลยนะคะ! โชคดีจริงๆ ที่วันนั้นตัดสินใจรีบมาตรวจทันที ไม่ปล่อยทิ้งไว้ ตอนนี้กลับมาใช้ชีวิตได้อย่างสดใสแล้ว!"',
+                    triggerTrueEnd: true
+                }
+            ]
+        };
+
+        /* -----------------------------------------------------------
+           5. GAME STATE & TYPEWRITER ENGINE
+        ----------------------------------------------------------- */
+        let currentBranch = 'intro';
+        let currentNodeIndex = 0;
+        let isTyping = false;
+        let fullText = '';
+        let charIndex = 0;
+        let typingTimer = null;
+
+        // Mini-game state
+        let inMiniGame = false;
+        let currentTreatmentStep = 1; // 1 -> 2 -> 3 -> 4
+        let completedTools = [];
+        let selectedToolId = null; // For click/tap-to-use on mobile or desktop
+
+        function renderSprites(pState = 'normal', showDoctor = false, mouthOpen = false) {
+            const pEl = document.getElementById('protagonistSprite');
+            pEl.innerHTML = getProtagonistSVG(pState, mouthOpen);
+
+            const docContainer = document.getElementById('doctorContainer');
+            const docSprite = document.getElementById('doctorSprite');
+            if (showDoctor) {
+                docContainer.classList.remove('hidden');
+                docSprite.innerHTML = getDoctorSVG(mouthOpen);
+            } else {
+                docContainer.classList.add('hidden');
+            }
+        }
+
+        function updateHUD(chapter, location, hp) {
+            document.getElementById('hudChapter').textContent = chapter;
+            document.getElementById('hudLocation').textContent = location;
+            const hpBar = document.getElementById('hpBar');
+            const hpText = document.getElementById('hpText');
+            hpBar.style.width = hp + '%';
+            hpText.textContent = hp + '%';
+
+            if (hp <= 35) {
+                hpBar.className = 'h-full bg-rose-500 transition-all duration-300';
+                hpText.className = 'font-mono text-xs text-rose-400';
+            } else if (hp <= 65) {
+                hpBar.className = 'h-full bg-amber-400 transition-all duration-300';
+                hpText.className = 'font-mono text-xs text-amber-300';
+            } else {
+                hpBar.className = 'h-full bg-emerald-400 transition-all duration-300';
+                hpText.className = 'font-mono text-xs text-emerald-300';
+            }
+        }
+
+        function loadNode(branchName, index) {
+            currentBranch = branchName;
+            currentNodeIndex = index;
+            const node = storyBranches[branchName][index];
+
+            // Background & HUD
+            document.getElementById('bgLayer').innerHTML = getPixelBackground(node.bg);
+            updateHUD(node.chapter, node.location, node.hp);
+
+            // Speaker badge styling
+            const speakerBadge = document.getElementById('speakerBadge');
+            speakerBadge.textContent = node.speaker;
+            if (node.speaker.includes('พญ.')) {
+                speakerBadge.className = 'px-2.5 py-0.5 bg-teal-600 text-white font-bold text-xs sm:text-sm border border-white shadow';
+            } else if (node.speaker.includes('ระบบ')) {
+                speakerBadge.className = 'px-2.5 py-0.5 bg-indigo-600 text-white font-bold text-xs sm:text-sm border border-white shadow';
+            } else {
+                speakerBadge.className = 'px-2.5 py-0.5 bg-pink-600 text-white font-bold text-xs sm:text-sm border border-white shadow';
+            }
+
+            // Sprite & Animation Class ("ดุกดิกๆ" vs Shiver)
+            const pEl = document.getElementById('protagonistSprite');
+            if (node.shiver) {
+                pEl.className = 'w-32 h-36 sm:w-40 sm:h-44 anim-shiver pixelated flex items-center justify-center';
+            } else if (node.pState === 'cured') {
+                pEl.className = 'w-32 h-36 sm:w-40 sm:h-44 anim-dukdik-happy pixelated flex items-center justify-center';
+            } else {
+                pEl.className = 'w-32 h-36 sm:w-40 sm:h-44 anim-dukdik pixelated flex items-center justify-center';
+            }
+
+            renderSprites(node.pState, node.showDoctor, false);
+
+            // Emotion Bubble
+            const emoEl = document.getElementById('emotionBubble');
+            if (node.emotion) {
+                emoEl.innerHTML = getEmotionIconSVG(node.emotion);
+                emoEl.classList.remove('hidden');
+            } else {
+                emoEl.classList.add('hidden');
+            }
+
+            // Screen Shake & Special SFX
+            if (node.shake) {
+                const screen = document.getElementById('gameScreen');
+                screen.classList.remove('anim-shake');
+                void screen.offsetWidth;
+                screen.classList.add('anim-shake');
+            }
+            if (node.sfx) {
+                playSfx(node.sfx);
+            }
+
+            // Typewriter Text Start
+            startTypewriter(node.text, node.pState, node.showDoctor);
+        }
+
+        function startTypewriter(text, pState, showDoctor) {
+            clearInterval(typingTimer);
+            isTyping = true;
+            fullText = text;
+            charIndex = 0;
+            const textEl = document.getElementById('dialogueText');
+            const arrowEl = document.getElementById('nextArrow');
+            textEl.textContent = '';
+            arrowEl.classList.add('hidden');
+
+            typingTimer = setInterval(() => {
+                if (charIndex < fullText.length) {
+                    textEl.textContent += fullText.charAt(charIndex);
+                    // Play retro blip & toggle talking mouth every 2 characters
+                    if (charIndex % 2 === 0) {
+                        playSfx('type');
+                        renderSprites(pState, showDoctor, (charIndex % 4 === 0));
+                    }
+                    charIndex++;
+                } else {
+                    finishTypewriter(pState, showDoctor);
+                }
+            }, 26);
+        }
+
+        function finishTypewriter(pState, showDoctor) {
+            clearInterval(typingTimer);
+            isTyping = false;
+            document.getElementById('dialogueText').textContent = fullText;
+            renderSprites(pState, showDoctor, false);
+
+            if (!inMiniGame) {
+                document.getElementById('nextArrow').classList.remove('hidden');
+            }
+        }
+
+        function handleDialogueClick() {
+            const node = storyBranches[currentBranch] ? storyBranches[currentBranch][currentNodeIndex] : null;
+
+            // If still typing, instant-complete the sentence
+            if (isTyping) {
+                const pState = node ? node.pState : 'patient';
+                const showDoc = node ? node.showDoctor : true;
+                finishTypewriter(pState, showDoc);
+                return;
+            }
+
+            // During Mini-Game, clicking dialogue box reminds player to drag the tool
+            if (inMiniGame) {
+                playSfx('next');
+                return;
+            }
+
+            if (!node) return;
+
+            // Check special node triggers
+            if (node.triggerChoice) {
+                playSfx('choice');
+                document.getElementById('choiceOverlay').classList.remove('hidden');
+                return;
+            }
+            if (node.startMiniGame) {
+                playSfx('choice');
+                enterMedicalMiniGame();
+                return;
+            }
+            if (node.triggerBadEnd) {
+                showEndingModal('bad');
+                return;
+            }
+            if (node.triggerTrueEnd) {
+                showEndingModal('true');
+                return;
+            }
+
+            // Advance to next dialogue node
+            if (currentNodeIndex + 1 < storyBranches[currentBranch].length) {
+                playSfx('next');
+                loadNode(currentBranch, currentNodeIndex + 1);
+            }
+        }
+
+        function selectRoute(routeNumber) {
+            playSfx('choice');
+            document.getElementById('choiceOverlay').classList.add('hidden');
+            document.getElementById('endingOverlay').classList.add('hidden');
+
+            if (routeNumber === 1) {
+                loadNode('route1', 0);
+            } else {
+                loadNode('route2_intro', 0);
+            }
+        }
+
+        /* -----------------------------------------------------------
+           6. ROUTE 2 INTERACTIVE DRAG & DROP MEDICAL MINI-GAME
+        ----------------------------------------------------------- */
+        function enterMedicalMiniGame() {
+            inMiniGame = true;
+            currentTreatmentStep = 1;
+            completedTools = [];
+            selectedToolId = null;
+
+            document.getElementById('inventoryPanel').classList.remove('hidden');
+            document.getElementById('treatmentStepper').classList.remove('hidden');
+            document.getElementById('dropHintBadge').classList.remove('hidden');
+            document.getElementById('lumpIndicator').classList.remove('hidden');
+            document.getElementById('nextArrow').classList.add('hidden');
+            document.getElementById('clickPromptHint').textContent = 'ลากอุปกรณ์การแพทย์ไปวางที่ตัวคนไข้ด้านบน';
+
+            const dropZone = document.getElementById('patientDropZone');
+            dropZone.classList.add('drop-zone-active', 'cursor-pointer');
+
+            updateStepperUI();
+            renderInventoryItems();
+            promptDoctorStepInstruction();
+        }
+
+        function updateStepperUI() {
+            for (let i = 1; i <= 4; i++) {
+                const pill = document.getElementById('stepPill' + i);
+                if (i < currentTreatmentStep) {
+                    pill.className = 'px-2 py-0.5 border border-emerald-300 bg-emerald-700 text-white font-bold';
+                } else if (i === currentTreatmentStep) {
+                    pill.className = 'px-2 py-0.5 border-2 border-white bg-cyan-500 text-slate-950 font-bold anim-dukdik';
+                } else {
+                    pill.className = 'px-2 py-0.5 border border-slate-500 bg-slate-800 text-slate-400';
+                }
+            }
+        }
+
+        function renderInventoryItems() {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = '';
+
+            medicalTools.forEach(tool => {
+                const isDone = completedTools.includes(tool.id);
+                const isSelected = (selectedToolId === tool.id);
+                const isCurrentTarget = (tool.stepRequired === currentTreatmentStep);
+
+                const itemBtn = document.createElement('div');
+                itemBtn.draggable = !isDone;
+                itemBtn.className = `p-2 border-2 flex items-center gap-2 transition-all ${
+                    isDone 
+                        ? 'bg-slate-900/60 border-slate-700 opacity-45 cursor-not-allowed' 
+                        : isSelected
+                            ? 'bg-cyan-900 border-amber-300 ring-2 ring-amber-300 cursor-grab scale-[1.02]'
+                            : isCurrentTarget
+                                ? 'bg-[#232d4b] border-cyan-300 hover:border-pink-400 cursor-grab'
+                                : 'bg-[#1b2238] border-slate-500 hover:border-slate-300 cursor-grab'
+                }`;
+
+                if (!isDone) {
+                    itemBtn.ondragstart = (e) => {
+                        e.dataTransfer.setData('text/plain', tool.id);
+                        selectToolForUse(tool.id);
+                    };
+                    itemBtn.onclick = () => {
+                        selectToolForUse(tool.id);
+                    };
+                }
+
+                itemBtn.innerHTML = `
+                    <div class="w-10 h-10 bg-slate-950 border border-slate-600 flex items-center justify-center shrink-0 ${!isDone ? 'anim-item-float' : ''}">
+                        ${tool.iconSvg}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'} truncate">${tool.name}</div>
+                        <div class="text-[11px] text-slate-300 truncate">${isDone ? '✔ ใช้งานแล้ว' : tool.desc}</div>
+                    </div>
+                `;
+                grid.appendChild(itemBtn);
+            });
+        }
+
+        function selectToolForUse(toolId) {
+            if (completedTools.includes(toolId)) return;
+            selectedToolId = toolId;
+            playSfx('next');
+            const tool = medicalTools.find(t => t.id === toolId);
+            document.getElementById('selectedToolHint').textContent = `กำลังถือ: ${tool.name} (คลิกที่ตัวคนไข้ด้านบนเพื่อใช้ได้เลย!)`;
+            renderInventoryItems();
+        }
+
+        function handleDragOver(e) {
+            if (!inMiniGame) return;
+            e.preventDefault();
+            document.getElementById('patientDropZone').classList.add('drop-zone-ready');
+        }
+
+        function handleDragLeave(e) {
+            if (!inMiniGame) return;
+            document.getElementById('patientDropZone').classList.remove('drop-zone-ready');
+        }
+
+        function handleDrop(e) {
+            if (!inMiniGame) return;
+            e.preventDefault();
+            document.getElementById('patientDropZone').classList.remove('drop-zone-ready');
+            const toolId = e.dataTransfer.getData('text/plain') || selectedToolId;
+            if (toolId) applyMedicalTool(toolId);
+        }
+
+        function handlePatientClick() {
+            if (!inMiniGame) return;
+            if (selectedToolId) {
+                applyMedicalTool(selectedToolId);
+            } else {
+                // Auto-remind player to pick an item from inventory
+                playSfx('wrong');
+                startTypewriter('💡 คลิกเลือกอุปกรณ์ในคลังด้านล่างก่อน หรือลากอุปกรณ์มาวางที่ตัวมินตราได้เลยค่ะ!', 'patient', true);
+            }
+        }
+
+        function promptDoctorStepInstruction() {
+            const instructions = {
+                1: 'ขั้นที่ 1: ลาก [1. เครื่องอัลตราซาวด์] จากคลังด้านล่าง มาตรวจดูขนาดและระยะของก้อนเนื้อที่ตัวคนไข้ค่ะ',
+                2: 'ขั้นที่ 2: พบก้อนเนื้อขนาดเล็กค่ะ! ลาก [2. เข็มเจาะตรวจชิ้นเนื้อ] มาตรวจยืนยันเซลล์เพื่อวางแผนผ่าตัดเลยค่ะ',
+                3: 'ขั้นที่ 3: ยืนยันว่าเป็นมะเร็งเต้านมระยะที่ 1 (ระยะเริ่มต้น)! ลาก [3. อุปกรณ์ผ่าตัดเฉพาะจุด] มานำก้อนเนื้อออกได้เลยค่ะ',
+                4: 'ขั้นที่ 4: ผ่าตัดนำก้อนเนื้อออกสำเร็จแล้ว! ลาก [4. ยารักษาและฟื้นฟู] ให้คนไข้เพื่อป้องกันการกลับมาเป็นซ้ำจนหายดีค่ะ'
+            };
+            document.getElementById('speakerBadge').textContent = 'พญ. ทอฝัน (แนะนำขั้นตอน)';
+            startTypewriter(instructions[currentTreatmentStep], 'patient', true);
+        }
+
+        function applyMedicalTool(toolId) {
+            const tool = medicalTools.find(t => t.id === toolId);
+            if (!tool || completedTools.includes(toolId)) return;
+
+            // Check if used in the right medical order
+            if (tool.stepRequired !== currentTreatmentStep) {
+                playSfx('wrong');
+                const neededTool = medicalTools.find(t => t.stepRequired === currentTreatmentStep);
+                startTypewriter(`⚠️ ต้องทำตามลำดับการรักษานะคะ! ตอนนี้คุณหมอให้ใช้ [${neededTool.name}] ก่อนค่ะ`, 'patient', true);
+                return;
+            }
+
+            // Correct Tool Applied!
+            playSfx('heal');
+            completedTools.push(toolId);
+            selectedToolId = null;
+            document.getElementById('selectedToolHint').textContent = 'ใช้งานสำเร็จ!';
+
+            const scanBeam = document.getElementById('scanBeamOverlay');
+            const emoEl = document.getElementById('emotionBubble');
+
+            if (currentTreatmentStep === 1) {
+                // Step 1: Ultrasound Scan effect
+                scanBeam.classList.remove('hidden');
+                setTimeout(() => scanBeam.classList.add('hidden'), 1400);
+                updateHUD('MINI-GAME (1/4)', 'อัลตราซาวด์พบก้อนระยะที่ 1', 90);
+            } else if (currentTreatmentStep === 2) {
+                // Step 2: Biopsy verified
+                emoEl.innerHTML = getEmotionIconSVG('check');
+                emoEl.classList.remove('hidden');
+                updateHUD('MINI-GAME (2/4)', 'ตรวจชิ้นเนื้อยืนยันผลสำเร็จ', 93);
+            } else if (currentTreatmentStep === 3) {
+                // Step 3: Surgery removes the lump!
+                document.getElementById('lumpIndicator').classList.add('hidden');
+                emoEl.innerHTML = getEmotionIconSVG('check');
+                emoEl.classList.remove('hidden');
+                updateHUD('MINI-GAME (3/4)', 'ผ่าตัดนำก้อนเนื้อร้ายออกสำเร็จ!', 97);
+            } else if (currentTreatmentStep === 4) {
+                // Step 4: Medicine & Full Recovery!
+                emoEl.innerHTML = getEmotionIconSVG('heart');
+                emoEl.classList.remove('hidden');
+                updateHUD('MINI-GAME (4/4)', 'รักษามะเร็งเต้านมหายดี 100%!', 100);
+            }
+
+            currentTreatmentStep++;
+            updateStepperUI();
+            renderInventoryItems();
+
+            if (currentTreatmentStep <= 4) {
+                promptDoctorStepInstruction();
+            } else {
+                // Completed all 4 steps -> Transition to True Ending
+                inMiniGame = false;
+                document.getElementById('dropHintBadge').classList.add('hidden');
+                document.getElementById('patientDropZone').classList.remove('drop-zone-active', 'drop-zone-ready');
+                setTimeout(() => {
+                    document.getElementById('inventoryPanel').classList.add('hidden');
+                    document.getElementById('treatmentStepper').classList.add('hidden');
+                    document.getElementById('clickPromptHint').textContent = 'คลิกที่กล่องข้อความเพื่อไปต่อ';
+                    loadNode('route2_ending', 0);
+                }, 900);
+            }
+        }
+
+        /* -----------------------------------------------------------
+           7. ENDING SCREEN & RESET
+        ----------------------------------------------------------- */
+        function showEndingModal(type) {
+            const overlay = document.getElementById('endingOverlay');
+            const badge = document.getElementById('endingBadge');
+            const title = document.getElementById('endingTitle');
+            const desc = document.getElementById('endingDesc');
+            const btnTryRoute2 = document.getElementById('btnTryRoute2');
+
+            overlay.classList.remove('hidden');
+
+            if (type === 'bad') {
+                badge.textContent = 'BAD ENDING (ทางเลือกที่ 1)';
+                badge.className = 'inline-block px-3 py-1 bg-rose-600 text-white font-bold text-xs sm:text-sm border-2 border-white mb-2';
+                title.textContent = 'ปล่อยไว้จนสายเกินไป...';
+                desc.textContent = 'เพราะคิดว่าก้อนเนื้อที่ไม่เจ็บคงไม่อันตราย ทำให้เสียโอกาสทองในการรักษาตั้งแต่ระยะเริ่มต้น เมื่อปล่อยไว้จนลุกลาม การรักษาจึงยากลำบากและส่งผลกระทบต่อชีวิตอย่างหนัก';
+                btnTryRoute2.classList.remove('hidden');
+            } else {
+                badge.textContent = '🌟 TRUE ENDING (ทางเลือกที่ 2)';
+                badge.className = 'inline-block px-3 py-1 bg-emerald-500 text-slate-950 font-bold text-xs sm:text-sm border-2 border-white mb-2';
+                title.textContent = 'รักษามะเร็งเต้านมหายดี 100%!';
+                desc.textContent = 'เพราะคุณสังเกตตัวเองและรีบมาพบแพทย์ทันทีที่คลำพบก้อนเนื้อ ทำให้ตรวจพบตั้งแต่ระยะที่ 1 และรับการรักษาตามขั้นตอนของแพทย์จนกลับมาใช้ชีวิตได้อย่างแข็งแรงและสดใสอีกครั้ง!';
+                btnTryRoute2.classList.add('hidden');
+            }
+        }
+
+        function resetGame() {
+            playSfx('choice');
+            inMiniGame = false;
+            completedTools = [];
+            selectedToolId = null;
+            document.getElementById('choiceOverlay').classList.add('hidden');
+            document.getElementById('endingOverlay').classList.add('hidden');
+            document.getElementById('inventoryPanel').classList.add('hidden');
+            document.getElementById('treatmentStepper').classList.add('hidden');
+            document.getElementById('dropHintBadge').classList.add('hidden');
+            document.getElementById('lumpIndicator').classList.add('hidden');
+            document.getElementById('scanBeamOverlay').classList.add('hidden');
+            document.getElementById('patientDropZone').classList.remove('drop-zone-active', 'drop-zone-ready');
+            document.getElementById('clickPromptHint').textContent = 'คลิกที่กล่องข้อความเพื่อไปต่อ';
+
+            loadNode('intro', 0);
+        }
+
+        // Start Game on Load
+        window.onload = () => {
+            loadNode('intro', 0);
+        };
+    </script>
+</body>
+</html>
